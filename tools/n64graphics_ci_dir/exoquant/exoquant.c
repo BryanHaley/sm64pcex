@@ -24,7 +24,7 @@ SOFTWARE.
 
 #include "exoquant.h"
 
-#ifndef OSX_BUILD // OSX build inclusion
+#ifndef __APPLE__ // OSX build inclusion
 #include <malloc.h>
 #endif
 

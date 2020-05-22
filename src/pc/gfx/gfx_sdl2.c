@@ -15,13 +15,15 @@
 #include <SDL2/SDL.h>
 #define GL_GLEXT_PROTOTYPES 1
 
-#ifdef OSX_BUILD
+#ifdef __APPLE__
 #include <SDL2/SDL_opengl.h>
 #else
 #include <SDL2/SDL_opengles2.h>
 #endif
 
 #endif // End of OS specific GL defines
+
+#include "ex/ex_gfx.h"
 
 #include "gfx_window_manager_api.h"
 #include "gfx_screen_config.h"
@@ -34,6 +36,10 @@ static SDL_Window *wnd;
 static int inverted_scancode_table[512];
 
 extern bool configFullscreen;
+
+SDL_Window *ex_window;
+SDL_GLContext ex_n64_context;
+SDL_GLContext ex_pc_context;
 
 const SDL_Scancode windows_scancode_table[] =
 {
@@ -119,6 +125,8 @@ static void gfx_sdl_init(void) {
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1); 
+
     window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
     if (gCLIOpts.FullScreen) {
@@ -149,7 +157,9 @@ static void gfx_sdl_init(void) {
         SDL_ShowCursor(SDL_ENABLE);
     }
   
-    SDL_GL_CreateContext(wnd);
+    ex_window = wnd;
+    ex_pc_context = SDL_GL_CreateContext(wnd);
+    ex_n64_context = SDL_GL_CreateContext(wnd);
     SDL_GL_SetSwapInterval(1); // We have a double buffered GL context, it makes no sense to want tearing.
     
     for (size_t i = 0; i < sizeof(windows_scancode_table) / sizeof(SDL_Scancode); i++) {

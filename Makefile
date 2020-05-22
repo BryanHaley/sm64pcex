@@ -9,6 +9,7 @@ default: all
 
 # These options can either be changed by modifying the makefile, or
 # by building with 'make SETTING=value'. 'make clean' may be required.
+DEBUG_FLAGS :=
 
 # Version of the game to build
 VERSION ?= us
@@ -25,9 +26,6 @@ TARGET_N64 = 0
 TARGET_RPI ?= 0
 # Compiler to use (ido or gcc)
 # COMPILER ?= ido // Old Default
-
-# Makeflag to enable OSX fixes
-OSX_BUILD ?= 0
 
 # Disable better camera by default
 BETTERCAMERA ?= 0
@@ -55,9 +53,17 @@ GRUCODE := f3dex2e
 WINDOWS_BUILD := 0
 
 ifeq ($(TARGET_WEB),0)
-ifeq ($(OS),Windows_NT)
-WINDOWS_BUILD := 1
-endif
+  ifeq ($(OS),Windows_NT)
+    WINDOWS_BUILD := 1
+  else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        LINUX_BUILD := 1
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        OSX_BUILD := 1
+    endif
+  endif
 endif
 
 # Release (version) flag defs
@@ -137,21 +143,21 @@ endif
 endif
 
 # Default build is for PC now
-VERSION_CFLAGS := $(VERSION_CFLAGS) -DNON_MATCHING -DAVOID_UB
+VERSION_CFLAGS += -DNON_MATCHING -DAVOID_UB
 
 ifeq ($(TARGET_RPI),1) # Define RPi to change SDL2 title & GLES2 hints
-      VERSION_CFLAGS += -DUSE_GLES
+  VERSION_CFLAGS += -DUSE_GLES
 endif
 
 ifeq ($(OSX_BUILD),1) # Modify GFX & SDL2 for OSX GL
-     VERSION_CLFAGS += -DOSX_BUILD
+  VERSION_CLFAGS += -DOSX_BUILD 1
 endif
 
 VERSION_ASFLAGS := --defsym AVOID_UB=1
 COMPARE := 0
 
 ifeq ($(TARGET_WEB),1)
-  VERSION_CFLAGS := $(VERSION_CFLAGS) -DTARGET_WEB
+  VERSION_CFLAGS += $(VERSION_CFLAGS) -DTARGET_WEB
 endif
 
 ################### Universal Dependencies ###################
@@ -220,7 +226,7 @@ LEVEL_DIRS := $(patsubst levels/%,%,$(dir $(wildcard levels/*/header.h)))
 # Directories containing source files
 
 # Hi, I'm a PC
-SRC_DIRS := src src/engine src/game src/audio src/menu src/buffers actors levels bin data assets src/pc src/pc/gfx src/pc/audio src/pc/controller
+SRC_DIRS := src src/engine src/game src/audio src/menu src/buffers actors levels bin data assets src/pc src/pc/gfx src/pc/ex src/pc/audio src/pc/controller
 ASM_DIRS :=
 
 BIN_DIRS := bin bin/$(VERSION)
@@ -300,9 +306,9 @@ GODDARD_C_FILES := $(foreach dir,$(GODDARD_SRC_DIRS),$(wildcard $(dir)/*.c))
 GENERATED_C_FILES := $(BUILD_DIR)/assets/mario_anim_data.c $(BUILD_DIR)/assets/demo_data.c \
   $(addprefix $(BUILD_DIR)/bin/,$(addsuffix _skybox.c,$(notdir $(basename $(wildcard textures/skyboxes/*.png)))))
 
-ifeq ($(WINDOWS_BUILD),0)
-  CXX_FILES :=
-endif
+#ifeq ($(WINDOWS_BUILD),0)
+#  CXX_FILES :=
+#endif
 
 # We need to keep this for now
 # If we're not N64 use below
@@ -461,6 +467,8 @@ CC_CHECK := $(CC) -fsyntax-only -fsigned-char $(INCLUDE_CFLAGS) -Wall -Wextra -W
 CFLAGS := $(OPT_FLAGS) $(INCLUDE_CFLAGS) $(VERSION_CFLAGS) $(GRUCODE_CFLAGS) -fno-strict-aliasing -fwrapv `$(SDLCONFIG) --cflags`
 endif
 
+CFLAGS += $(DEBUG_FLAGS)
+
 # Check for better camera option
 ifeq ($(BETTERCAMERA),1)
 CC_CHECK += -DBETTERCAMERA -DEXT_OPTIONS_MENU
@@ -492,7 +500,7 @@ LDFLAGS := $(OPT_FLAGS) -lm -lGLESv2 `$(SDLCONFIG) --libs` -no-pie
 else
 
 ifeq ($(OSX_BUILD),1)
-LDFLAGS := -lm -framework OpenGL `$(SDLCONFIG) --libs` -no-pie -lpthread `pkg-config --libs libusb-1.0 glfw3 glew`
+LDFLAGS := -lm -lassimp -lstdc++ -framework OpenGL `$(SDLCONFIG) --libs` -no-pie -lpthread `pkg-config --libs libusb-1.0 glfw3 glew`
 else
 LDFLAGS := $(BITS) -march=$(TARGET_ARCH) -lm -lGL `$(SDLCONFIG) --libs` -no-pie -lpthread
 endif

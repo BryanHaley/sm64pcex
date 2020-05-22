@@ -18,6 +18,8 @@
 #include "gfx_rendering_api.h"
 #include "gfx_screen_config.h"
 
+#include "ex/ex_gfx.h"
+
 #define SUPPORT_CHECK(x) assert(x)
 
 // SCALE_M_N: upscale/downscale M-bit integer to N-bit
@@ -1473,6 +1475,9 @@ void gfx_get_dimensions(uint32_t *width, uint32_t *height) {
     gfx_wapi->get_dimensions(width, height);
 }
 
+ex_model_t* backpack_model;
+GLuint vertexbuffer;
+
 void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
     gfx_wapi = wapi;
     gfx_rapi = rapi;
@@ -1508,6 +1513,25 @@ void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
     for (size_t i = 0; i < sizeof(precomp_shaders) / sizeof(uint32_t); i++) {
         gfx_lookup_or_create_shader_program(precomp_shaders[i]);
     }
+
+    // EX TEST
+    ex_change_context(true);
+    ex_init_shader();
+    //backpack_model = ex_load_model("/Users/bryan/backpack/backpack.fbx");
+
+    static const GLfloat g_vertex_buffer_data[] = {
+       -1.0f, -1.0f, 0.0f,
+       1.0f, -1.0f, 0.0f,
+       0.0f,  1.0f, 0.0f,
+    };
+
+    // Generate 1 buffer, put the resulting identifier in vertexbuffer
+    glGenBuffers(1, &vertexbuffer);
+    // The following commands will talk about our 'vertexbuffer' buffer
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    // Give our vertices to OpenGL.
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+    ex_change_context(false);
 }
 
 void gfx_start_frame(void) {
@@ -1520,7 +1544,8 @@ void gfx_start_frame(void) {
     gfx_current_dimensions.aspect_ratio = (float)gfx_current_dimensions.width / (float)gfx_current_dimensions.height;
 }
 
-void gfx_run(Gfx *commands) {
+void gfx_run(Gfx *commands) 
+{
     gfx_sp_reset();
     
     //puts("New frame");
@@ -1538,6 +1563,22 @@ void gfx_run(Gfx *commands) {
     double t1 = gfx_wapi->get_time();
     //printf("Process %f %f\n", t1, t1 - t0);
     gfx_wapi->swap_buffers_begin();
+
+    ex_change_context(true);
+
+    ex_use_shader();
+    //ex_draw_model(backpack_model); 
+
+    // 1st attribute buffer : vertices
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(ex_mesh_shader->attributePosition, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    // Draw the triangle !
+    glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+    glDisableVertexAttribArray(0);
+
+    gfx_wapi->swap_buffers_begin();
+    ex_change_context(false);
 }
 
 void gfx_end_frame(void) {

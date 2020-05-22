@@ -23,7 +23,7 @@
 #include <SDL2/SDL.h>
 #define GL_GLEXT_PROTOTYPES 1
 
-#ifdef OSX_BUILD
+#ifdef __APPLE__
 #include <SDL2/SDL_opengl.h>
 #else
 #include <SDL2/SDL_opengles2.h>
@@ -194,8 +194,8 @@ static struct ShaderProgram *gfx_opengl_create_and_load_new_shader(uint32_t shad
     size_t num_floats = 4;
 
     // Vertex shader
-#ifdef OSX_BUILD
-    append_line(vs_buf, &vs_len, "");
+#ifdef __APPLE__
+    append_line(vs_buf, &vs_len, "#version 120");
 #else
     append_line(vs_buf, &vs_len, "#version 100");
 #endif
@@ -230,8 +230,8 @@ if (used_textures[0] || used_textures[1]) {
     append_line(vs_buf, &vs_len, "}");
 
     // Fragment shader
-#ifdef OSX_BUILD
-    append_line(fs_buf, &fs_len, "");
+#ifdef __APPLE__
+    append_line(fs_buf, &fs_len, "#version 120");
 #else
     append_line(fs_buf, &fs_len, "#version 100");
     append_line(fs_buf, &fs_len, "precision mediump float;");
@@ -481,7 +481,7 @@ static void gfx_opengl_init(void) {
     glewInit();
 #endif
 
-#ifdef OSX_BUILD
+#ifdef __APPLE__
     glewInit();
 #endif
     glGenBuffers(1, &opengl_vbo);
