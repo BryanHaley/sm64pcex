@@ -1476,7 +1476,14 @@ void gfx_get_dimensions(uint32_t *width, uint32_t *height) {
 }
 
 ex_model_t* backpack_model;
-GLuint vertexbuffer;
+GLuint n64_framebuffer = 0;
+GLuint quad_VertexArrayID = 0;
+GLuint quad_vertexbuffer = 0;
+GLuint tri_VertexArrayID = 0;
+GLuint tri_vertexbuffer = 0;
+GLuint n64_fb_texture = 0;
+GLuint n64_depth_buffer = 0;
+GLuint n64_depth_texture = 0;
 
 void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
     gfx_wapi = wapi;
@@ -1514,23 +1521,74 @@ void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
         gfx_lookup_or_create_shader_program(precomp_shaders[i]);
     }
 
+    glGenFramebuffers(1, &n64_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, n64_framebuffer);
+
+    glGenTextures(1, &n64_fb_texture);
+    glBindTexture(GL_TEXTURE_2D, n64_fb_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glGenRenderbuffers(1, &n64_depth_buffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, n64_depth_buffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 640, 480);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, n64_depth_buffer);
+
+    glGenTextures(1, &n64_depth_texture);
+    glBindTexture(GL_TEXTURE_2D, n64_depth_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, n64_fb_texture, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, n64_depth_texture, 0);
+
+    GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, bufs);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        fprintf(stderr, "ERROR::COULD NOT SET UP RENDER TO TEXTURE FOR N64 FRAMEBUFFER\n");
+    }
+
     // EX TEST
     ex_change_context(true);
-    ex_init_shader();
+    ex_init_mesh_shader();
+    ex_init_n64_frame_shader();
     //backpack_model = ex_load_model("/Users/bryan/backpack/backpack.fbx");
 
-    static const GLfloat g_vertex_buffer_data[] = {
-       -1.0f, -1.0f, 0.0f,
-       1.0f, -1.0f, 0.0f,
-       0.0f,  1.0f, 0.0f,
+    // The fullscreen quad's VBO
+    glGenVertexArrays(1, &quad_VertexArrayID);
+    glBindVertexArray(quad_VertexArrayID);
+
+    static const GLfloat g_quad_vertex_buffer_data[] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f,  1.0f, 0.0f,
     };
 
-    // Generate 1 buffer, put the resulting identifier in vertexbuffer
-    glGenBuffers(1, &vertexbuffer);
-    // The following commands will talk about our 'vertexbuffer' buffer
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    // Give our vertices to OpenGL.
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+    glGenBuffers(1, &quad_vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+
+    // test triangle VBO
+    glGenVertexArrays(1, &tri_VertexArrayID);
+    glBindVertexArray(tri_VertexArrayID);
+
+    static const GLfloat g_tri_vertex_buffer_data[] = {
+        0.0f, 1.0f, -20.0f,
+        -1.0f, -1.0f, -3.0f,
+        1.0f,  -1.0f, -3.0f,
+    };
+
+    glGenBuffers(1, &tri_vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, tri_vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_tri_vertex_buffer_data), g_tri_vertex_buffer_data, GL_STATIC_DRAW);
+
     ex_change_context(false);
 }
 
@@ -1546,6 +1604,9 @@ void gfx_start_frame(void) {
 
 void gfx_run(Gfx *commands) 
 {
+    mat4 projection = GLM_MAT4_IDENTITY_INIT;
+    glm_perspective_default(320.0f/240.0f, projection);
+
     gfx_sp_reset();
     
     //puts("New frame");
@@ -1558,24 +1619,59 @@ void gfx_run(Gfx *commands)
     
     double t0 = gfx_wapi->get_time();
     gfx_rapi->start_frame();
+
+    GLenum buffers[] = { GL_AUX0, GL_AUX1 };
+    glDrawBuffers(2, buffers);
     gfx_run_dl(commands);
     gfx_flush();
+
     double t1 = gfx_wapi->get_time();
+
     //printf("Process %f %f\n", t1, t1 - t0);
     gfx_wapi->swap_buffers_begin();
 
-    ex_change_context(true);
 
-    ex_use_shader();
-    //ex_draw_model(backpack_model); 
+    /* --------------------------------------
+     * PC RENDER CONTEXT
+     * --------------------------------------
+     */
+
+    ex_change_context(true);
+    glEnable(GL_DEPTH_TEST);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    ex_use_shader(ex_n64_frame_shader);
+
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, n64_fb_texture );
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, n64_depth_texture );
+
+    glUniform1i(glGetUniformLocation( ex_n64_frame_shader->shaderProgram, "colorTexture" ), 0);
+    glUniform1i(glGetUniformLocation( ex_n64_frame_shader->shaderProgram, "depthTexture" ), 1);
 
     // 1st attribute buffer : vertices
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+    glEnableVertexAttribArray(quad_VertexArrayID);
+    glVertexAttribPointer(ex_n64_frame_shader->attributePosition, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    // Draw the triangles
+    glDrawArrays(GL_TRIANGLES, 0, 6); // Starting from vertex 0; 3 vertices total -> 1 triangle
+    glDisableVertexAttribArray(quad_VertexArrayID);
+
+
+    ex_use_shader(ex_mesh_shader);
+
+    glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "perspective" ), 1, GL_FALSE, (float *) projection);
+
+    glBindBuffer(GL_ARRAY_BUFFER, tri_vertexbuffer);
+    glEnableVertexAttribArray(tri_VertexArrayID);
     glVertexAttribPointer(ex_mesh_shader->attributePosition, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    // Draw the triangle !
+    // Draw the triangles
     glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
-    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(tri_VertexArrayID);
+
 
     gfx_wapi->swap_buffers_begin();
     ex_change_context(false);

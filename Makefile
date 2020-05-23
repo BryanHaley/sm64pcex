@@ -27,7 +27,7 @@ TARGET_RPI ?= 0
 # Compiler to use (ido or gcc)
 # COMPILER ?= ido // Old Default
 
-# Disable better camera by default
+# Enable better camera by default
 BETTERCAMERA ?= 0
 # Disable no drawing distance by default
 NODRAWINGDISTANCE ?= 0

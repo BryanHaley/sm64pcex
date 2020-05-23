@@ -14,7 +14,9 @@
  * @see camera.inc.c
  */
 
-#define ABS(x) ((x) > 0.f ? (x) : -(x))
+#ifndef __APPLE__
+    #define ABS(x) ((x) > 0.f ? (x) : -(x))
+#endif
 #define ABS2(x) ((x) >= 0.f ? (x) : -(x))
 
 /**

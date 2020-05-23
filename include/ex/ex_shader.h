@@ -10,6 +10,7 @@ typedef struct
     GLint attributeTexture;
     GLint uniformView;
     GLint uniformTexture0;
+    GLint uniformTexture1;
 } ex_shader_t;
 
 #endif

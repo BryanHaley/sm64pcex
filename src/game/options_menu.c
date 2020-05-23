@@ -19,6 +19,8 @@
 
 #include <stdbool.h>
 
+#define N64_ABS(x) ((x) > 0.f ? (x) : -(x))
+
 u8 optmenu_open = 0;
 
 static u8 optmenu_binding = 0;
@@ -398,7 +400,7 @@ void optmenu_check_buttons(void) {
         allowInput = 1;
     }
 
-    if (ABS(gPlayer1Controller->stickY) > 60) {
+    if (N64_ABS(gPlayer1Controller->stickY) > 60) {
         if (allowInput) {
             #ifndef nosound
             play_sound(SOUND_MENU_CHANGE_SELECT, gDefaultSoundArgs);
@@ -419,7 +421,7 @@ void optmenu_check_buttons(void) {
             else if (currentMenu->select > currentMenu->scroll + 3)
                 currentMenu->scroll = currentMenu->select - 3;
         }
-    } else if (ABS(gPlayer1Controller->stickX) > 60) {
+    } else if (N64_ABS(gPlayer1Controller->stickX) > 60) {
         if (allowInput) {
             #ifndef nosound
             play_sound(SOUND_MENU_CHANGE_SELECT, gDefaultSoundArgs);

@@ -1,6 +1,7 @@
 #include <ultra64.h>
 
 #define INCLUDED_FROM_CAMERA_C
+#define N64_ABS(x) ((x) > 0.f ? (x) : -(x))
 
 #include "sm64.h"
 #include "camera.h"
@@ -786,7 +787,7 @@ void set_camera_height(struct Camera *c, f32 goalHeight) {
         if (sMarioCamState->action == ACT_BUTT_STUCK_IN_GROUND ||
             sMarioCamState->action == ACT_HEAD_STUCK_IN_GROUND ||
             sMarioCamState->action == ACT_FEET_STUCK_IN_GROUND) {
-            if (ABS(c->pos[1] - goalHeight) > 1000.f) {
+            if (N64_ABS(c->pos[1] - goalHeight) > 1000.f) {
                 c->pos[1] = goalHeight;
             }
         }
@@ -2165,7 +2166,7 @@ s16 update_default_camera(struct Camera *c) {
         if (xzDist >= 250) {
             sStatusFlags &= ~CAM_FLAG_BEHIND_MARIO_POST_DOOR;
         }
-        if (ABS((sMarioCamState->faceAngle[1] - yaw) / 2) < 0x1800) {
+        if (N64_ABS((sMarioCamState->faceAngle[1] - yaw) / 2) < 0x1800) {
             sStatusFlags &= ~CAM_FLAG_BEHIND_MARIO_POST_DOOR;
             yaw = sCameraYawAfterDoorCutscene + DEGREES(180);
             dist = 800.f;
@@ -4435,15 +4436,15 @@ s32 is_surf_within_bounding_box(struct Surface *surf, f32 xMax, f32 yMax, f32 zM
         if (j >= 3) {
             j = 0;
         }
-        dx = ABS(sx[i] - sx[j]);
+        dx = N64_ABS(sx[i] - sx[j]);
         if (dx > dxMax) {
             dxMax = dx;
         }
-        dy = ABS(sy[i] - sy[j]);
+        dy = N64_ABS(sy[i] - sy[j]);
         if (dy > dyMax) {
             dyMax = dy;
         }
-        dz = ABS(sz[i] - sz[j]);
+        dz = N64_ABS(sz[i] - sz[j]);
         if (dz > dzMax) {
             dzMax = dz;
         }
@@ -4650,7 +4651,7 @@ void set_camera_pitch_shake(s16 mag, s16 decay, s16 inc) {
  * Start shaking the camera's yaw (side to side)
  */
 void set_camera_yaw_shake(s16 mag, s16 decay, s16 inc) {
-    if (ABS(mag) > ABS(gLakituState.shakeMagnitude[1])) {
+    if (N64_ABS(mag) > N64_ABS(gLakituState.shakeMagnitude[1])) {
         gLakituState.shakeMagnitude[1] = mag;
         gLakituState.shakeYawDecay = decay;
         gLakituState.shakeYawVel = inc;
@@ -5478,9 +5479,9 @@ s16 next_lakitu_state(Vec3f newPos, Vec3f newFoc, Vec3f curPos, Vec3f curFoc,
         inTransition = 1;
 
         vec3f_get_dist_and_angle(curFoc, curPos, &goalDist, &goalPitch, &goalYaw);
-        distVelocity = ABS(goalDist - sModeTransition.posDist) / distTimer;
-        pitchVelocity = ABS(goalPitch - sModeTransition.posPitch) / angleTimer;
-        yawVelocity = ABS(goalYaw - sModeTransition.posYaw) / angleTimer;
+        distVelocity = N64_ABS(goalDist - sModeTransition.posDist) / distTimer;
+        pitchVelocity = N64_ABS(goalPitch - sModeTransition.posPitch) / angleTimer;
+        yawVelocity = N64_ABS(goalYaw - sModeTransition.posYaw) / angleTimer;
 
         camera_approach_f32_symmetric_bool(&sModeTransition.posDist, goalDist, distVelocity);
         camera_approach_s16_symmetric_bool(&sModeTransition.posYaw, goalYaw, yawVelocity);
@@ -7286,7 +7287,7 @@ BAD_RETURN(s32) cutscene_ending_mario_fall_focus_mario(struct Camera *c) {
     Vec3f offset;
     vec3f_set(offset, 0.f, 80.f, 0.f);
 
-    offset[2] = ABS(sMarioCamState->pos[1] - c->pos[1]) * -0.1f;
+    offset[2] = N64_ABS(sMarioCamState->pos[1] - c->pos[1]) * -0.1f;
     if (offset[2] > -100.f) {
         offset[2] = -100.f;
     }
@@ -8422,7 +8423,7 @@ BAD_RETURN(s32) cutscene_red_coin_star_warp(struct Camera *c) {
     posYaw = calculate_yaw(sCutsceneVars[1].point, c->pos);
     yaw = calculate_yaw(sCutsceneVars[1].point, sMarioCamState->pos);
 
-    if (ABS(yaw - posYaw + DEGREES(90)) < ABS(yaw - posYaw - DEGREES(90))) {
+    if (N64_ABS(yaw - posYaw + DEGREES(90)) < N64_ABS(yaw - posYaw - DEGREES(90))) {
         yaw += DEGREES(90);
     } else {
         yaw -= DEGREES(90);
@@ -8555,7 +8556,7 @@ BAD_RETURN(s32) cutscene_prepare_cannon_fly_to_cannon(struct Camera *c) {
  * Used in the cannon opening cutscene to fly back to the camera's last position and focus
  */
 void cannon_approach_prev(f32 *value, f32 target) {
-    f32 inc = ABS(target - *value) / sCutsceneVars[2].point[0];
+    f32 inc = N64_ABS(target - *value) / sCutsceneVars[2].point[0];
     camera_approach_f32_symmetric_bool(value, target, inc);
 }
 

@@ -2,7 +2,6 @@
 #define EX_MESH_H
 
 #include "ex/cglm/cglm.h"
-#include "ex/cglm/struct.h"
 #include "ex_ogl.h"
 #include <stdint.h>
 

@@ -37,10 +37,6 @@ static int inverted_scancode_table[512];
 
 extern bool configFullscreen;
 
-SDL_Window *ex_window;
-SDL_GLContext ex_n64_context;
-SDL_GLContext ex_pc_context;
-
 const SDL_Scancode windows_scancode_table[] =
 {
 	/*	0						1							2							3							4						5							6							7 */
@@ -123,9 +119,7 @@ static void gfx_sdl_init(void) {
     #endif
 
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-
-    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1); 
+    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4); 
 
     window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
@@ -159,7 +153,9 @@ static void gfx_sdl_init(void) {
   
     ex_window = wnd;
     ex_pc_context = SDL_GL_CreateContext(wnd);
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
     ex_n64_context = SDL_GL_CreateContext(wnd);
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
     SDL_GL_SetSwapInterval(1); // We have a double buffered GL context, it makes no sense to want tearing.
     
     for (size_t i = 0; i < sizeof(windows_scancode_table) / sizeof(SDL_Scancode); i++) {

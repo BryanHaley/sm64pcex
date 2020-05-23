@@ -29,7 +29,9 @@ extern f32 gCosineTable[];
 
 #define sqr(x) ((x) * (x))
 
-#define abs(x) ((x) < 0 ? -(x) : (x))
+#ifndef __APPLE__
+    #define abs(x) ((x) < 0 ? -(x) : (x))
+#endif
 
 void *vec3f_copy(Vec3f dest, Vec3f src);
 void *vec3f_set(Vec3f dest, f32 x, f32 y, f32 z);

@@ -9,6 +9,8 @@
 #include "include/text_strings.h"
 #include "engine/surface_collision.h"
 #include "pc/configfile.h"
+#include "ex/ex_gfx.h"
+#include "ex/cglm/cglm.h"
 #include <stdio.h>
 
 
@@ -313,7 +315,7 @@ static void newcam_rotate_button(void)
 
     if (newcam_analogue == 1) //There's not much point in keeping this behind a check, but it wouldn't hurt, just incase any 2player shenanigans ever happen, it makes it easy to disable.
     { //The joystick values cap at 80, so divide by 8 to get the same net result at maximum turn as the button
-        if (ABS(gPlayer2Controller->stickX) > 20 && newcam_modeflags & NC_FLAG_XTURN)
+        if (N64_ABS(gPlayer2Controller->stickX) > 20 && newcam_modeflags & NC_FLAG_XTURN)
         {
             if (newcam_modeflags & NC_FLAG_8D)
             {
@@ -349,7 +351,7 @@ static void newcam_rotate_button(void)
             newcam_yaw_acc -= (newcam_yaw_acc*(DEGRADE));
         }
 
-        if (ABS(gPlayer2Controller->stickY) > 20 && newcam_modeflags & NC_FLAG_YTURN)
+        if (N64_ABS(gPlayer2Controller->stickY) > 20 && newcam_modeflags & NC_FLAG_YTURN)
             newcam_tilt_acc = newcam_adjust_value(newcam_tilt_acc,(-gPlayer2Controller->stickY/4));
         else
             newcam_tilt_acc -= (newcam_tilt_acc*(DEGRADE));
@@ -434,7 +436,7 @@ static void newcam_update_values(void)
         else
         {
         if (gMarioState->intendedMag > 0 && gMarioState->vel[1] == 0 && newcam_modeflags & NC_FLAG_XTURN)
-            newcam_yaw = (approach_s16_symmetric(newcam_yaw,-gMarioState->faceAngle[1]-0x4000,((newcam_aggression*(ABS(gPlayer1Controller->stickX/10)))*(gMarioState->forwardVel/32))));
+            newcam_yaw = (approach_s16_symmetric(newcam_yaw,-gMarioState->faceAngle[1]-0x4000,((newcam_aggression*(N64_ABS(gPlayer1Controller->stickX/10)))*(gMarioState->forwardVel/32))));
         else
             newcam_turnwait = 10;
         }
@@ -653,4 +655,20 @@ void newcam_loop(struct Camera *c)
     #ifdef NEWCAM_DEBUG
     newcam_diagnostics();
     #endif // NEWCAM_DEBUG
+
+    // update ex view matrix
+    //ex_view_mat4 = GLM_MAT4_IDENTITY;
+
+    // set camera position
+    glm_translate(ex_view_mat4, newcam_pos);
+
+    //s16 newcam_yaw; //Z axis rotation
+    //s8 newcam_yaw_acc;
+    //s16 newcam_tilt = 1500; //Y axis rotation
+    float z_rot = (newcam_yaw / 0x10000) * 360;
+    glm_make_rad(&z_rot);
+    float y_rot = (newcam_tilt / 0x10000) * 360;
+    glm_make_rad(&y_rot);
+    glm_rotate_y(ex_view_mat4, newcam_tilt, ex_view_mat4);
+    glm_rotate_z(ex_view_mat4, newcam_yaw, ex_view_mat4);
 }

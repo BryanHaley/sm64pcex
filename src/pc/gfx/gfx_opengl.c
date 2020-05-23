@@ -252,6 +252,7 @@ if (used_textures[0] || used_textures[1]) {
     if (used_textures[1]) {
         append_line(fs_buf, &fs_len, "uniform sampler2D uTex1;");
     }
+
     append_line(fs_buf, &fs_len, "void main() {");
 
     if (used_textures[0]) {
@@ -286,10 +287,15 @@ if (used_textures[0] || used_textures[1]) {
     }
 
     if (opt_alpha) {
-        append_line(fs_buf, &fs_len, "gl_FragColor = texel;");
+        //append_line(fs_buf, &fs_len, "gl_FragColor = texel;");
+        append_line(fs_buf, &fs_len, "gl_FragData[0] = texel;");
+        
     } else {
-        append_line(fs_buf, &fs_len, "gl_FragColor = vec4(texel, 1.0);");
+        //append_line(fs_buf, &fs_len, "gl_FragColor = vec4(texel, 1.0);");
+        append_line(fs_buf, &fs_len, "gl_FragData[0] = vec4(texel, 1.0);");
     }
+
+    append_line(fs_buf, &fs_len, "gl_FragData[1] = vec4(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z, 1.0);");
     append_line(fs_buf, &fs_len, "}");
 
     vs_buf[vs_len] = '\0';
