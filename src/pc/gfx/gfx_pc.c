@@ -20,6 +20,7 @@
 
 #include "../../game/camera.h"
 #include "ex/ex_gfx.h"
+#include "ex/SOIL2/SOIL2.h"
 
 #define SUPPORT_CHECK(x) assert(x)
 
@@ -1479,11 +1480,10 @@ void gfx_get_dimensions(uint32_t *width, uint32_t *height) {
 }
 
 ex_model_t* backpack_model;
+GLuint backpack_texture;
 GLuint n64_framebuffer = 0;
 GLuint quad_VertexArrayID = 0;
 GLuint quad_vertexbuffer = 0;
-GLuint tri_VertexArrayID = 0;
-GLuint tri_vertexbuffer = 0;
 GLuint n64_fb_texture = 0;
 GLuint n64_depth_buffer = 0;
 GLuint n64_depth_texture = 0;
@@ -1578,24 +1578,20 @@ void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
     glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
 
-    // test triangle VBO
-    glGenVertexArrays(1, &tri_VertexArrayID);
-    glBindVertexArray(tri_VertexArrayID);
-
-    static const GLfloat g_tri_vertex_buffer_data[] = {
-        0.0f, 100.0f, 0.0f,
-        -100.0f, -100.0f, 0.0f,
-        100.0f, -100.0f, 0.0f
-    };
-
-    glGenBuffers(1, &tri_vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, tri_vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_tri_vertex_buffer_data), g_tri_vertex_buffer_data, GL_STATIC_DRAW);
-
     ex_projection_matrix = (Mtx*) calloc(1, sizeof(Mtx));
     ex_view_matrix = (Mtx*) calloc(1, sizeof(Mtx));
 
-    backpack_model = ex_load_model("/Users/bryan/backpack/backpack.obj");
+    stbi_set_flip_vertically_on_load(true);
+
+    backpack_model = ex_load_model("/Users/bryan/backpack/suzanne.fbx");
+
+    backpack_texture = SOIL_load_OGL_texture
+    (
+        "/Users/bryan/backpack/suzanne.png",
+        SOIL_LOAD_RGBA,
+        SOIL_CREATE_NEW_ID,
+        SOIL_FLAG_MIPMAPS
+    );
 
     ex_change_context(false);
 }
@@ -1610,11 +1606,9 @@ void gfx_start_frame(void) {
     gfx_current_dimensions.aspect_ratio = (float)gfx_current_dimensions.width / (float)gfx_current_dimensions.height;
 }
 
-extern struct CameraFOVStatus sFOVState;
 extern struct Camera *gCamera;
 
 #include "../../engine/math_util.h"
-#include "../../game/mario.h"
 
 void gfx_run(Gfx *commands) 
 {
@@ -1673,31 +1667,12 @@ void gfx_run(Gfx *commands)
 
     if (gCamera)
     {
-        /*ex_use_shader(ex_mesh_shader);
+        glActiveTexture( GL_TEXTURE0 );
+        glBindTexture( GL_TEXTURE_2D, backpack_texture );
 
-        Mat4 ex_model_mat4 = GLM_MAT4_IDENTITY;
-        Mat4 ex_view_mat4 = GLM_MAT4_IDENTITY;
-        Vec3f mario_spawn_position = (Vec3f) {-1328.0f, 260.0f, 4664.0f};
+        glUniform1i(glGetUniformLocation( ex_mesh_shader->shaderProgram, "colorTexture" ), 0);
 
-        // Place the triange where Mario spawns
-        mtxf_translate(ex_model_mat4, mario_spawn_position);
-        // Recreate view matrix using the camera's position and focus
-        mtxf_lookat(ex_view_mat4, gCamera->pos, gCamera->focus, 0);
-
-        // pass model, view, projection matrices to shader
-        glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "model" ), 1, GL_FALSE, (float *) ex_model_mat4);
-        glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "view" ), 1, GL_FALSE, (float *) ex_view_mat4);
-        glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "projection" ), 1, GL_FALSE, (float *) ex_projection_matrix);
-
-        // Bind triangle's VBO
-        glBindBuffer(GL_ARRAY_BUFFER, tri_vertexbuffer);
-        glEnableVertexAttribArray(tri_VertexArrayID);
-        glVertexAttribPointer(ex_mesh_shader->attributePosition, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-        // Draw the triangle
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDisableVertexAttribArray(tri_VertexArrayID);*/
-
-        mtxf_lookat(ex_view_matrix, gCamera->pos, gCamera->focus, 0);
+        //mtxf_lookat(ex_view_matrix, gCamera->pos, gCamera->focus, 0);
         ex_draw_model(backpack_model);
     }
 

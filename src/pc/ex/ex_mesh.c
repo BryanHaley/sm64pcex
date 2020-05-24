@@ -5,7 +5,7 @@
 #include "ex/cglm/cglm.h"
 #include <stdlib.h>
 
-ex_mesh_t* ex_create_mesh(size_t num_indices, GLuint* indices, size_t num_vertices, GLfloat* vertices, GLfloat* texcoords)
+ex_mesh_t* ex_create_mesh(size_t num_indices, GLuint* indices, size_t num_vertices, GLfloat* vertices)
 {
     //return NULL;
     if (num_vertices <= 0 || num_indices <= 0) return NULL;
@@ -19,51 +19,26 @@ ex_mesh_t* ex_create_mesh(size_t num_indices, GLuint* indices, size_t num_vertic
 
     glGenBuffers(1, &(mesh->VBO));
     glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*num_vertices*3, vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &(mesh->VTBO));
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->VTBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*num_vertices*2, texcoords, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*(num_vertices*3)+(num_vertices*2), vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, &(mesh->EBO));
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*num_indices, indices, GL_STATIC_DRAW);
 
     mesh->EBO_len = num_indices;
+    mesh->TexCoordOffset = (num_vertices*3)*sizeof(GLfloat);
 
     return mesh;
 }
 
 void ex_draw_mesh(ex_mesh_t* mesh)
 {
-    /*ex_use_shader(ex_mesh_shader);
-
-    Mat4 ex_model_matrix = GLM_MAT4_IDENTITY;
-    Vec3f mario_spawn_position = (Vec3f) {-1328.0f, 260.0f, 4664.0f};
-
-    mtxf_translate(ex_model_matrix, mario_spawn_position);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
-    glBindVertexArray(mesh->VAO);
-
-    glVertexAttribPointer(glGetAttribLocation(ex_mesh_shader->shaderProgram, "position"), 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glEnableVertexAttribArray(glGetAttribLocation(ex_mesh_shader->shaderProgram, "position"));
-
-    glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "model" ), 1, GL_FALSE, (float *) ex_model_matrix);
-    glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "view" ), 1, GL_FALSE, (float *) ex_view_matrix);
-    glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "projection" ), 1, GL_FALSE, (float *) ex_projection_matrix);
-
-    glDrawElements(GL_TRIANGLES, mesh->EBO_len, GL_UNSIGNED_INT, NULL);
-
-    glDisableVertexAttribArray(mesh->VAO);*/
-
     ex_use_shader(ex_mesh_shader);
 
     Mat4 ex_model_matrix = GLM_MAT4_IDENTITY;
     Mat4 ex_scaled_model_matrix = GLM_MAT4_IDENTITY;
     Vec3f mario_spawn_position = (Vec3f) {-1328.0f, 320.0f, 4664.0f};
-    Vec3f model_scale = (Vec3f) {50.0f, 50.0f, 50.0f};
+    Vec3f model_scale = (Vec3f) {1.0f, 1.0f, 1.0f};
 
     // Place the triange where Mario spawns
     mtxf_translate(ex_model_matrix, mario_spawn_position);
@@ -77,9 +52,12 @@ void ex_draw_mesh(ex_mesh_t* mesh)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->EBO);
     glEnableVertexAttribArray(mesh->VAO);
     glBindBuffer(GL_ARRAY_BUFFER, mesh->VBO);
-    glVertexAttribPointer(glGetAttribLocation(ex_mesh_shader->shaderProgram, "position"), 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->VTBO);
-    glVertexAttribPointer(glGetAttribLocation(ex_mesh_shader->shaderProgram, "texcoord"), 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribPointer(glGetAttribLocation(ex_mesh_shader->shaderProgram, "position"), 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+    glEnableVertexAttribArray(glGetAttribLocation(ex_mesh_shader->shaderProgram, "position"));
+    glVertexAttribPointer(glGetAttribLocation(ex_mesh_shader->shaderProgram, "texcoord"), 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(mesh->TexCoordOffset));
+    glEnableVertexAttribArray(glGetAttribLocation(ex_mesh_shader->shaderProgram, "texcoord"));
+
+    //printf("%d\n", glGetAttribLocation(ex_mesh_shader->shaderProgram, "texcoord"));
     // Draw the triangle
     glDrawElements(GL_TRIANGLES, mesh->EBO_len, GL_UNSIGNED_INT, NULL);
     glDisableVertexAttribArray(mesh->VAO);

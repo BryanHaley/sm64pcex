@@ -26,6 +26,7 @@ void ex_init_mesh_shader()
     "void main() {\n"
     //"gl_FragColor = vec4(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z, 1.0);\n"
     "gl_FragColor = texture2D(colorTexture, outPos);\n"
+    //"gl_FragColor = vec4(outPos.xy, 0.0, 1.0);\n"
     "}";
 
     // vertex shader

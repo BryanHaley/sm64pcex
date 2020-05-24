@@ -318,6 +318,7 @@ static void geo_process_camera(struct GraphNodeCamera *node) {
     gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(rollMtx), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 
     mtxf_lookat(cameraTransform, node->pos, node->focus, node->roll);
+    mtxf_copy(ex_view_matrix, cameraTransform);
 
     //N64_MAT4_TO_GLM_MAT4(cameraTransform, ex_view_mat4);
 
