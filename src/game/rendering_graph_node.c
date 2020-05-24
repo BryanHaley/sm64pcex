@@ -11,6 +11,8 @@
 #include "game_init.h"
 #include "rendering_graph_node.h"
 
+#include "ex/ex_gfx.h"
+
 /**
  * This file contains the code that processes the scene graph for rendering.
  * The scene graph is responsible for drawing everything except the HUD / text boxes.
@@ -250,6 +252,7 @@ static void geo_process_perspective(struct GraphNodePerspective *node) {
 #endif
 
         guPerspective(mtx, &perspNorm, node->fov, aspect, node->near, node->far, 1.0f);
+        mtxf_copy(ex_projection_matrix, mtx);
         gSPPerspNormalize(gDisplayListHead++, perspNorm);
 
         gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
@@ -315,6 +318,9 @@ static void geo_process_camera(struct GraphNodeCamera *node) {
     gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(rollMtx), G_MTX_PROJECTION | G_MTX_MUL | G_MTX_NOPUSH);
 
     mtxf_lookat(cameraTransform, node->pos, node->focus, node->roll);
+
+    //N64_MAT4_TO_GLM_MAT4(cameraTransform, ex_view_mat4);
+
     mtxf_mul(gMatStack[gMatStackIndex + 1], cameraTransform, gMatStack[gMatStackIndex]);
     gMatStackIndex++;
     mtxf_to_mtx(mtx, gMatStack[gMatStackIndex]);

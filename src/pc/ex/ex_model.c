@@ -75,18 +75,22 @@ ex_mesh_t* process_mesh(struct aiMesh *mesh, const struct aiScene *scene)
         num_indices += mesh->mFaces[i].mNumIndices;
     }
 
-    ex_vertex_t* vertices = (ex_vertex_t*) calloc(num_vertices, sizeof(ex_vertex_t));
+    /*ex_vertex_t* vertices = (ex_vertex_t*) calloc(num_vertices, sizeof(ex_vertex_t));
     ex_vertex_normal_t* vertex_normals = (ex_vertex_normal_t*) calloc(num_vertices, sizeof(ex_vertex_normal_t));
     ex_vertex_color_t* vertex_colors = (ex_vertex_color_t*) calloc(num_vertices, sizeof(ex_vertex_color_t));
-    ex_vertex_texcoord_t* vertex_texcoords = (ex_vertex_texcoord_t*) calloc(num_vertices, sizeof(ex_vertex_texcoord_t));
+    ex_vertex_texcoord_t* vertex_texcoords = (ex_vertex_texcoord_t*) calloc(num_vertices, sizeof(ex_vertex_texcoord_t));*/
+    GLfloat* vertices = (GLfloat*) calloc(num_vertices*3, sizeof(GLfloat));
+    GLfloat* texcoords = (GLfloat*) calloc(num_vertices*2, sizeof(GLfloat));
     GLuint* indices = (unsigned int*) calloc(num_indices, sizeof(GLuint));
 
     for(unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
-        vertices[i].x = mesh->mVertices[i].x;
-        vertices[i].y = mesh->mVertices[i].y;
-        vertices[i].z = mesh->mVertices[i].z;
-        vertex_normals[i].nx = mesh->mNormals[i].x;
+        vertices[i*3] = mesh->mVertices[i].x;
+        vertices[i*3+1] = mesh->mVertices[i].y;
+        vertices[i*3+2] = mesh->mVertices[i].z;
+        texcoords[i*2] = mesh->mTextureCoords[0][i].x;
+        texcoords[i*2+1] = mesh->mTextureCoords[0][i].y;
+        /*vertex_normals[i].nx = mesh->mNormals[i].x;
         vertex_normals[i].ny = mesh->mNormals[i].y;
         vertex_normals[i].nz = mesh->mNormals[i].z;
         vertex_colors[i].color_r = 1.0f;
@@ -95,7 +99,7 @@ ex_mesh_t* process_mesh(struct aiMesh *mesh, const struct aiScene *scene)
         //vertex_texcoords[i].u = mesh->mTextureCoords[i].u;
         //vertex_texcoords[i].v = mesh->mTextureCoords[i].v;
         vertex_texcoords[i].u = 0.0f;
-        vertex_texcoords[i].v = 0.0f;
+        vertex_texcoords[i].v = 0.0f;*/
     }
 
     int flCounter = 0;
@@ -109,7 +113,7 @@ ex_mesh_t* process_mesh(struct aiMesh *mesh, const struct aiScene *scene)
         }
     }
 
-    return ex_create_mesh(num_vertices, vertices, vertex_normals, vertex_colors, vertex_texcoords, num_indices, indices);
+    return ex_create_mesh(num_indices, indices, num_vertices, vertices, texcoords);
 }
 
 void ex_draw_model(ex_model_t* model)

@@ -18,6 +18,7 @@
 #include "gfx_rendering_api.h"
 #include "gfx_screen_config.h"
 
+#include "../../game/camera.h"
 #include "ex/ex_gfx.h"
 
 #define SUPPORT_CHECK(x) assert(x)
@@ -549,6 +550,8 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx *verti
         const Vtx_t *v = &vertices[i].v;
         const Vtx_tn *vn = &vertices[i].n;
         struct LoadedVertex *d = &rsp.loaded_vertices[dest_index];
+
+        //printf ("\nRandom Vertex: (%f, %f, %f)\n", v->ob[0], v->ob[1], v->ob[2]);
         
         float x = v->ob[0] * rsp.MP_matrix[0][0] + v->ob[1] * rsp.MP_matrix[1][0] + v->ob[2] * rsp.MP_matrix[2][0] + rsp.MP_matrix[3][0];
         float y = v->ob[0] * rsp.MP_matrix[0][1] + v->ob[1] * rsp.MP_matrix[1][1] + v->ob[2] * rsp.MP_matrix[2][1] + rsp.MP_matrix[3][1];
@@ -1537,7 +1540,7 @@ void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
 
     glGenTextures(1, &n64_depth_texture);
     glBindTexture(GL_TEXTURE_2D, n64_depth_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -1580,14 +1583,19 @@ void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
     glBindVertexArray(tri_VertexArrayID);
 
     static const GLfloat g_tri_vertex_buffer_data[] = {
-        0.0f, 1.0f, -20.0f,
-        -1.0f, -1.0f, -3.0f,
-        1.0f,  -1.0f, -3.0f,
+        0.0f, 100.0f, 0.0f,
+        -100.0f, -100.0f, 0.0f,
+        100.0f, -100.0f, 0.0f
     };
 
     glGenBuffers(1, &tri_vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, tri_vertexbuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(g_tri_vertex_buffer_data), g_tri_vertex_buffer_data, GL_STATIC_DRAW);
+
+    ex_projection_matrix = (Mtx*) calloc(1, sizeof(Mtx));
+    ex_view_matrix = (Mtx*) calloc(1, sizeof(Mtx));
+
+    backpack_model = ex_load_model("/Users/bryan/backpack/backpack.obj");
 
     ex_change_context(false);
 }
@@ -1602,11 +1610,14 @@ void gfx_start_frame(void) {
     gfx_current_dimensions.aspect_ratio = (float)gfx_current_dimensions.width / (float)gfx_current_dimensions.height;
 }
 
+extern struct CameraFOVStatus sFOVState;
+extern struct Camera *gCamera;
+
+#include "../../engine/math_util.h"
+#include "../../game/mario.h"
+
 void gfx_run(Gfx *commands) 
 {
-    mat4 projection = GLM_MAT4_IDENTITY_INIT;
-    glm_perspective_default(320.0f/240.0f, projection);
-
     gfx_sp_reset();
     
     //puts("New frame");
@@ -1638,7 +1649,7 @@ void gfx_run(Gfx *commands)
 
     ex_change_context(true);
     glEnable(GL_DEPTH_TEST);
-
+    
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1660,18 +1671,35 @@ void gfx_run(Gfx *commands)
     glDrawArrays(GL_TRIANGLES, 0, 6); // Starting from vertex 0; 3 vertices total -> 1 triangle
     glDisableVertexAttribArray(quad_VertexArrayID);
 
+    if (gCamera)
+    {
+        /*ex_use_shader(ex_mesh_shader);
 
-    ex_use_shader(ex_mesh_shader);
+        Mat4 ex_model_mat4 = GLM_MAT4_IDENTITY;
+        Mat4 ex_view_mat4 = GLM_MAT4_IDENTITY;
+        Vec3f mario_spawn_position = (Vec3f) {-1328.0f, 260.0f, 4664.0f};
 
-    glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "perspective" ), 1, GL_FALSE, (float *) projection);
+        // Place the triange where Mario spawns
+        mtxf_translate(ex_model_mat4, mario_spawn_position);
+        // Recreate view matrix using the camera's position and focus
+        mtxf_lookat(ex_view_mat4, gCamera->pos, gCamera->focus, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, tri_vertexbuffer);
-    glEnableVertexAttribArray(tri_VertexArrayID);
-    glVertexAttribPointer(ex_mesh_shader->attributePosition, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    // Draw the triangles
-    glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
-    glDisableVertexAttribArray(tri_VertexArrayID);
+        // pass model, view, projection matrices to shader
+        glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "model" ), 1, GL_FALSE, (float *) ex_model_mat4);
+        glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "view" ), 1, GL_FALSE, (float *) ex_view_mat4);
+        glUniformMatrix4fv(glGetUniformLocation( ex_mesh_shader->shaderProgram, "projection" ), 1, GL_FALSE, (float *) ex_projection_matrix);
 
+        // Bind triangle's VBO
+        glBindBuffer(GL_ARRAY_BUFFER, tri_vertexbuffer);
+        glEnableVertexAttribArray(tri_VertexArrayID);
+        glVertexAttribPointer(ex_mesh_shader->attributePosition, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        // Draw the triangle
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDisableVertexAttribArray(tri_VertexArrayID);*/
+
+        mtxf_lookat(ex_view_matrix, gCamera->pos, gCamera->focus, 0);
+        ex_draw_model(backpack_model);
+    }
 
     gfx_wapi->swap_buffers_begin();
     ex_change_context(false);

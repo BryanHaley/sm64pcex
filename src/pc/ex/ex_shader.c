@@ -11,13 +11,21 @@ void ex_init_mesh_shader()
 
     const GLchar* vShaderCode = "#version 120\n"
     "attribute vec3 position;\n"
-    "uniform mat4 perspective;"
+    "attribute vec2 texcoord;\n"
+    "uniform mat4 model;"
+    "uniform mat4 view;"
+    "uniform mat4 projection;"
+    "varying vec2 outPos;\n"
     "void main() {\n"
-    "gl_Position = perspective * vec4(position, 1.0); }";
+    "gl_Position = projection * view * model * vec4(position, 1.0);"
+    "outPos = texcoord; }";
 
     const GLchar* fShaderCode = "#version 120\n"
+    "uniform sampler2D colorTexture;\n"
+    "varying vec2 outPos;\n"
     "void main() {\n"
-    "gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+    //"gl_FragColor = vec4(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z, 1.0);\n"
+    "gl_FragColor = texture2D(colorTexture, outPos);\n"
     "}";
 
     // vertex shader
@@ -54,8 +62,8 @@ void ex_init_mesh_shader()
     shader->uniformTexture0 = glGetUniformLocation( shader->shaderProgram, "colorTexture" );
     shader->uniformTexture1 = glGetUniformLocation( shader->shaderProgram, "depthTexture" );
 
-    fprintf(stderr, "attributePosition: %d\nattributeNormal: %d\nattributeColor: %d\nattributeTexture: %d\nuniformView: %d\nuniformTexture0: %d\nuniformTexture1: %d\n",
-            shader->attributePosition, shader->attributeNormal, shader->attributeColor, shader->attributeTexture, shader->uniformView, shader->uniformTexture0, shader->uniformTexture1);
+    //fprintf(stderr, "attributePosition: %d\nattributeNormal: %d\nattributeColor: %d\nattributeTexture: %d\nuniformView: %d\nuniformTexture0: %d\nuniformTexture1: %d\n",
+            //shader->attributePosition, shader->attributeNormal, shader->attributeColor, shader->attributeTexture, shader->uniformView, shader->uniformTexture0, shader->uniformTexture1);
 }
 
 void ex_init_n64_frame_shader()
@@ -114,8 +122,8 @@ void ex_init_n64_frame_shader()
     shader->uniformTexture0 = glGetUniformLocation( shader->shaderProgram, "colorTexture" );
     shader->uniformTexture1 = glGetUniformLocation( shader->shaderProgram, "depthTexture" );
 
-    fprintf(stderr, "attributePosition: %d\nattributeNormal: %d\nattributeColor: %d\nattributeTexture: %d\nuniformView: %d\nuniformTexture0: %d\nuniformTexture1: %d\n",
-            shader->attributePosition, shader->attributeNormal, shader->attributeColor, shader->attributeTexture, shader->uniformView, shader->uniformTexture0, shader->uniformTexture1);
+    //fprintf(stderr, "attributePosition: %d\nattributeNormal: %d\nattributeColor: %d\nattributeTexture: %d\nuniformView: %d\nuniformTexture0: %d\nuniformTexture1: %d\n",
+            //shader->attributePosition, shader->attributeNormal, shader->attributeColor, shader->attributeTexture, shader->uniformView, shader->uniformTexture0, shader->uniformTexture1);
 }
 
 void ex_use_shader(ex_shader_t* shader)
