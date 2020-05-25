@@ -24,18 +24,32 @@ TARGET_N64 = 0
 
 # Build and optimize for Raspberry Pi(s)
 TARGET_RPI ?= 0
-# Compiler to use (ido or gcc)
-# COMPILER ?= ido // Old Default
+
+# Makeflag to enable OSX fixes
+OSX_BUILD ?= 0
 
 # Enable better camera by default
 BETTERCAMERA ?= 0
 # Disable no drawing distance by default
 NODRAWINGDISTANCE ?= 0
+# Disable texture fixes by default (helps with them purists)
+TEXTURE_FIX ?= 0
+# Enable extended options menu by default
+EXT_OPTIONS_MENU ?= 1
 
 # Build for Emscripten/WebGL
 TARGET_WEB ?= 0
 # Specify the target you are building for, 0 means native
 TARGET_ARCH ?= native
+
+ifeq ($(CROSS),i686-w64-mingw32.static-)
+  TARGET_ARCH = i386pe
+else ifeq ($(CROSS),x86_64-w64-mingw32.static-)
+  TARGET_ARCH = i386pe
+else
+  TARGET_ARCH = native
+endif
+
 TARGET_BITS ?= 0
 
 ifneq ($(TARGET_BITS),0)
@@ -45,8 +59,6 @@ else
 endif
 
 # Automatic settings for PC port(s)
-# WINDOWS_BUILD IS NOT FOR COMPILING A WINDOWS EXECUTABLE UNDER LINUX OR WSL!
-# USE THE WIKI GUIDE WITH MSYS2 FOR COMPILING A WINDOWS EXECUTABLE!
 
 NON_MATCHING := 1
 GRUCODE := f3dex2e
@@ -153,6 +165,10 @@ ifeq ($(OSX_BUILD),1) # Modify GFX & SDL2 for OSX GL
   VERSION_CLFAGS += -DOSX_BUILD 1
 endif
 
+ifeq ($(OSX_BUILD),1) # Modify GFX & SDL2 for OSX GL
+     VERSION_CFLAGS += -DOSX_BUILD
+endif
+
 VERSION_ASFLAGS := --defsym AVOID_UB=1
 COMPARE := 0
 
@@ -179,7 +195,7 @@ endif
 endif
 
 # Make tools if out of date
-DUMMY != make -s -C tools >&2 || echo FAIL
+DUMMY != make -C tools >&2 || echo FAIL
 ifeq ($(DUMMY),FAIL)
   $(error Failed to build tools)
 endif
@@ -434,19 +450,31 @@ else
 endif
 
 ifeq ($(WINDOWS_BUILD),1)
-  LD := $(CXX)
+  ifeq ($(CROSS),i686-w64-mingw32.static-) # fixes compilation in MXE on Linux and WSL
+    LD := $(CC)
+  else ifeq ($(CROSS),x86_64-w64-mingw32.static-)
+    LD := $(CC)
+  else
+    LD := $(CXX)
+  endif
 else
   LD := $(CC)
 endif
 
-ifeq ($(OSX_BUILD),0)
-CPP := $(CROSS)cpp -P
-OBJDUMP := $(CROSS)objdump
-OBJCOPY := $(CROSS)objcopy
-else # If building on/for OSX
-CPP := cpp-9 -P
-OBJDUMP := i686-w64-mingw32-objdump
-OBJCOPY := i686-w64-mingw32-objcopy
+ifeq ($(WINDOWS_BUILD),1) # fixes compilation in MXE on Linux and WSL
+  CPP := cpp -P
+  OBJCOPY := objcopy
+  OBJDUMP := $(CROSS)objdump
+else
+ifeq ($(OSX_BUILD),1)
+ CPP := cpp-9 -P
+ OBJDUMP := i686-w64-mingw32-objdump
+ OBJCOPY := i686-w64-mingw32-objcopy
+else # Linux & other builds
+  CPP := $(CROSS)cpp -P
+  OBJCOPY := $(CROSS)objcopy
+  OBJDUMP := $(CROSS)objdump
+endif
 endif
 
 PYTHON := python3
@@ -469,33 +497,47 @@ endif
 
 CFLAGS += $(DEBUG_FLAGS)
 
-# Check for better camera option
+# Check for enhancement options
+
+# Check for Puppycam option
 ifeq ($(BETTERCAMERA),1)
-CC_CHECK += -DBETTERCAMERA -DEXT_OPTIONS_MENU
-CFLAGS += -DBETTERCAMERA -DEXT_OPTIONS_MENU
+  CC_CHECK += -DBETTERCAMERA
+  CFLAGS += -DBETTERCAMERA
+  EXT_OPTIONS_MENU := 1
 endif
 
 # Check for no drawing distance option
 ifeq ($(NODRAWINGDISTANCE),1)
-CC_CHECK += -DNODRAWINGDISTANCE
-CFLAGS += -DNODRAWINGDISTANCE
+  CC_CHECK += -DNODRAWINGDISTANCE
+  CFLAGS += -DNODRAWINGDISTANCE
+endif
+
+# Check for texture fix option
+ifeq ($(TEXTURE_FIX),1)
+  CC_CHECK += -DTEXTURE_FIX
+  CFLAGS += -DTEXTURE_FIX
+endif
+
+# Check for extended options menu option
+ifeq ($(EXT_OPTIONS_MENU),1)
+  CC_CHECK += -DEXT_OPTIONS_MENU
+  CFLAGS += -DEXT_OPTIONS_MENU
 endif
 
 ASFLAGS := -I include -I $(BUILD_DIR) $(VERSION_ASFLAGS)
 
 ifeq ($(TARGET_WEB),1)
 LDFLAGS := -lm -lGL -lSDL2 -no-pie -s TOTAL_MEMORY=20MB -g4 --source-map-base http://localhost:8080/ -s "EXTRA_EXPORTED_RUNTIME_METHODS=['callMain']"
-else
-
-ifeq ($(WINDOWS_BUILD),1)
-LDFLAGS := $(BITS) -march=$(TARGET_ARCH) -Llib -lpthread -lglew32 `$(SDLCONFIG) --static-libs` -lm -lglu32 -lsetupapi -ldinput8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion -luuid -lopengl32 -no-pie -static
-ifeq ($(WINDOWS_CONSOLE),1)
-LDFLAGS += -mconsole
-endif
-else
-
+else ifeq ($(WINDOWS_BUILD),1)
+  LDFLAGS := $(BITS) -march=$(TARGET_ARCH) -Llib -lpthread -lglew32 `$(SDLCONFIG) --static-libs` -lm -lglu32 -lsetupapi -ldinput8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lwinmm -lversion -luuid -lopengl32 -static
+  ifeq ($(CROSS),)
+    LDFLAGS += -no-pie
+  endif
+  ifeq ($(WINDOWS_CONSOLE),1)
+    LDFLAGS += -mconsole
+  endif
+else ifeq ($(TARGET_RPI),1)
 # Linux / Other builds below
-ifeq ($(TARGET_RPI),1)
 LDFLAGS := $(OPT_FLAGS) -lm -lGLESv2 `$(SDLCONFIG) --libs` -no-pie
 else
 
@@ -759,7 +801,6 @@ $(BUILD_DIR)/src/audio/%.acpp: src/audio/%.c
 $(BUILD_DIR)/src/audio/%.copt: $(BUILD_DIR)/src/audio/%.acpp
 	$(QEMU_IRIX) -silent -L $(IRIX_ROOT) $(IRIX_ROOT)/usr/lib/copt -signed -I=$< -CMP=$@ -cp=i -scalaroptimize=1
 endif
-
 
 # Rebuild files with 'GLOBAL_ASM' if the NON_MATCHING flag changes.
 $(GLOBAL_ASM_O_FILES): $(GLOBAL_ASM_DEP).$(NON_MATCHING)

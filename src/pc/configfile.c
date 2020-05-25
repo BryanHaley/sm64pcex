@@ -5,8 +5,10 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#include <SDL2/SDL.h>
 
 #include "configfile.h"
+#include "gfx/gfx_screen_config.h"
 #include "controller/controller_api.h"
 
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
@@ -32,7 +34,21 @@ struct ConfigOption {
  *Config options and default values
  */
 
-bool configFullscreen = false;
+// Video/audio stuff
+ConfigWindow configWindow       = {
+    .x = SDL_WINDOWPOS_CENTERED,
+    .y = SDL_WINDOWPOS_CENTERED,
+    .w = DESIRED_SCREEN_WIDTH,
+    .h = DESIRED_SCREEN_HEIGHT,
+    .vsync = 1,
+    .reset = false,
+    .fullscreen = false,
+    .exiting_fullscreen = false,
+    .settings_changed = false,
+};
+unsigned int configFiltering    = 1;          // 0=force nearest, 1=linear, (TODO) 2=three-point
+unsigned int configMasterVolume = MAX_VOLUME; // 0 - MAX_VOLUME
+
 // Keyboard mappings (VK_ values, by default keyboard/gamepad/mouse)
 unsigned int configKeyA[MAX_BINDS]          = { 0x0026,   0x1000,     0x1103     };
 unsigned int configKeyB[MAX_BINDS]          = { 0x0033,   0x1002,     0x1101     };
@@ -55,6 +71,7 @@ unsigned int configCameraXSens   = 50;
 unsigned int configCameraYSens   = 50;
 unsigned int configCameraAggr    = 0;
 unsigned int configCameraPan     = 0;
+unsigned int configCameraDegrade = 10; // 0 - 100%
 bool         configCameraInvertX = false;
 bool         configCameraInvertY = false;
 bool         configEnableCamera  = false;
@@ -63,7 +80,14 @@ bool         configCameraMouse   = false;
 unsigned int configSkipIntro     = 0;
 
 static const struct ConfigOption options[] = {
-    {.name = "fullscreen",           .type = CONFIG_TYPE_BOOL, .boolValue = &configFullscreen},
+    {.name = "fullscreen",           .type = CONFIG_TYPE_BOOL, .boolValue = &configWindow.fullscreen},
+    {.name = "window_x",             .type = CONFIG_TYPE_UINT, .uintValue = &configWindow.x},
+    {.name = "window_y",             .type = CONFIG_TYPE_UINT, .uintValue = &configWindow.y},
+    {.name = "window_w",             .type = CONFIG_TYPE_UINT, .uintValue = &configWindow.w},
+    {.name = "window_h",             .type = CONFIG_TYPE_UINT, .uintValue = &configWindow.h},
+    {.name = "vsync",                .type = CONFIG_TYPE_UINT, .uintValue = &configWindow.vsync},
+    {.name = "texture_filtering",    .type = CONFIG_TYPE_UINT, .uintValue = &configFiltering},
+    {.name = "master_volume",        .type = CONFIG_TYPE_UINT, .uintValue = &configMasterVolume},
     {.name = "key_a",                .type = CONFIG_TYPE_BIND, .uintValue = configKeyA},
     {.name = "key_b",                .type = CONFIG_TYPE_BIND, .uintValue = configKeyB},
     {.name = "key_start",            .type = CONFIG_TYPE_BIND, .uintValue = configKeyStart},
@@ -87,6 +111,7 @@ static const struct ConfigOption options[] = {
     {.name = "bettercam_ysens",      .type = CONFIG_TYPE_UINT, .uintValue = &configCameraYSens},
     {.name = "bettercam_aggression", .type = CONFIG_TYPE_UINT, .uintValue = &configCameraAggr},
     {.name = "bettercam_pan_level",  .type = CONFIG_TYPE_UINT, .uintValue = &configCameraPan},
+    {.name = "bettercam_degrade",    .type = CONFIG_TYPE_UINT, .uintValue = &configCameraDegrade},
     #endif
     {.name = "skip_intro",           .type = CONFIG_TYPE_UINT, .uintValue = &configSkipIntro},    // Add this back!
 };

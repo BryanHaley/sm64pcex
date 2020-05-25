@@ -14,7 +14,7 @@ lldiv_t lldiv(long long num, long long denom) {
 
     return ret;
 }
-#endif // OSX build inclusion
+#endif // OSX_BUILD cannot use this
 
 ldiv_t ldiv(long num, long denom) {
     ldiv_t ret;
