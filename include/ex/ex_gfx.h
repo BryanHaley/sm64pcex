@@ -31,7 +31,7 @@ mat4* ex_camera_init();
 void ex_use_shader(ex_shader_t* shader);
 void ex_restore_prev_shader();
 
-ex_model_t* ex_load_model(const char* filename);
+ex_model_t* ex_load_model(const char* directory, const char* filename, const char* format);
 void ex_draw_model(ex_model_t* model);
 
 #endif

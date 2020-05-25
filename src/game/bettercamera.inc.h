@@ -9,8 +9,6 @@
 #include "include/text_strings.h"
 #include "engine/surface_collision.h"
 #include "pc/configfile.h"
-#include "ex/ex_gfx.h"
-#include "ex/cglm/cglm.h"
 #include <stdio.h>
 
 
@@ -655,20 +653,4 @@ void newcam_loop(struct Camera *c)
     #ifdef NEWCAM_DEBUG
     newcam_diagnostics();
     #endif // NEWCAM_DEBUG
-
-    // update ex view matrix
-    //ex_view_mat4 = GLM_MAT4_IDENTITY;
-
-    // set camera position
-    glm_translate(ex_view_mat4, newcam_pos);
-
-    //s16 newcam_yaw; //Z axis rotation
-    //s8 newcam_yaw_acc;
-    //s16 newcam_tilt = 1500; //Y axis rotation
-    float z_rot = (newcam_yaw / 0x10000) * 360;
-    glm_make_rad(&z_rot);
-    float y_rot = (newcam_tilt / 0x10000) * 360;
-    glm_make_rad(&y_rot);
-    glm_rotate_y(ex_view_mat4, newcam_tilt, ex_view_mat4);
-    glm_rotate_z(ex_view_mat4, newcam_yaw, ex_view_mat4);
 }

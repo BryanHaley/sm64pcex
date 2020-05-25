@@ -20,7 +20,6 @@
 
 #include "../../game/camera.h"
 #include "ex/ex_gfx.h"
-#include "ex/SOIL2/SOIL2.h"
 
 #define SUPPORT_CHECK(x) assert(x)
 
@@ -1480,7 +1479,6 @@ void gfx_get_dimensions(uint32_t *width, uint32_t *height) {
 }
 
 ex_model_t* backpack_model;
-GLuint backpack_texture;
 GLuint n64_framebuffer = 0;
 GLuint quad_VertexArrayID = 0;
 GLuint quad_vertexbuffer = 0;
@@ -1583,15 +1581,7 @@ void gfx_init(struct GfxWindowManagerAPI *wapi, struct GfxRenderingAPI *rapi) {
 
     stbi_set_flip_vertically_on_load(true);
 
-    backpack_model = ex_load_model("/Users/bryan/backpack/suzanne.fbx");
-
-    backpack_texture = SOIL_load_OGL_texture
-    (
-        "/Users/bryan/backpack/suzanne.png",
-        SOIL_LOAD_RGBA,
-        SOIL_CREATE_NEW_ID,
-        SOIL_FLAG_MIPMAPS
-    );
+    backpack_model = ex_load_model("/Users/bryan/Downloads/player", "player", "mdl");
 
     ex_change_context(false);
 }
@@ -1667,12 +1657,6 @@ void gfx_run(Gfx *commands)
 
     if (gCamera)
     {
-        glActiveTexture( GL_TEXTURE0 );
-        glBindTexture( GL_TEXTURE_2D, backpack_texture );
-
-        glUniform1i(glGetUniformLocation( ex_mesh_shader->shaderProgram, "colorTexture" ), 0);
-
-        //mtxf_lookat(ex_view_matrix, gCamera->pos, gCamera->focus, 0);
         ex_draw_model(backpack_model);
     }
 

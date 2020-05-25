@@ -288,6 +288,9 @@ if (used_textures[0] || used_textures[1]) {
 
     if (opt_alpha) {
         //append_line(fs_buf, &fs_len, "gl_FragColor = texel;");
+
+        append_line(fs_buf, &fs_len, "if (texel.a < 0.1) discard;");
+
         append_line(fs_buf, &fs_len, "gl_FragData[0] = texel;");
         
     } else {
@@ -296,6 +299,7 @@ if (used_textures[0] || used_textures[1]) {
     }
 
     append_line(fs_buf, &fs_len, "gl_FragData[1] = vec4(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z, 1.0);");
+
     append_line(fs_buf, &fs_len, "}");
 
     vs_buf[vs_len] = '\0';

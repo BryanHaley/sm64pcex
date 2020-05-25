@@ -8,10 +8,11 @@
 typedef struct 
 {
     GLuint VAO, EBO, VBO;
+    GLuint texture;
     size_t EBO_len, TexCoordOffset;
 } ex_mesh_t;
 
-ex_mesh_t* ex_create_mesh(size_t num_indices, GLuint* indices, size_t num_vertices, GLfloat* vertices);
+ex_mesh_t* ex_create_mesh(size_t num_indices, GLuint* indices, size_t num_vertices, GLfloat* vertices, GLuint texture);
 void ex_draw_mesh(ex_mesh_t* mesh);
 
 #endif
