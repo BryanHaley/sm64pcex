@@ -320,8 +320,6 @@ static void geo_process_camera(struct GraphNodeCamera *node) {
     mtxf_lookat(cameraTransform, node->pos, node->focus, node->roll);
     mtxf_copy(ex_view_matrix, cameraTransform);
 
-    //N64_MAT4_TO_GLM_MAT4(cameraTransform, ex_view_mat4);
-
     mtxf_mul(gMatStack[gMatStackIndex + 1], cameraTransform, gMatStack[gMatStackIndex]);
     gMatStackIndex++;
     mtxf_to_mtx(mtx, gMatStack[gMatStackIndex]);

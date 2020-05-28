@@ -228,6 +228,7 @@ static void gfx_sdl_onkeydown(int scancode) {
 
 static void gfx_sdl_onkeyup(int scancode) {
     keyboard_on_key_up(translate_scancode(scancode));
+    ex_get_inputs(scancode);
 }
 
 static void gfx_sdl_handle_events(void) {

@@ -545,9 +545,6 @@ ifeq ($(OSX_BUILD),1)
 LDFLAGS := -lm -lassimp -lstdc++ -framework OpenGL -framework Carbon `$(SDLCONFIG) --libs` -no-pie -lpthread `pkg-config --libs libusb-1.0 glfw3 glew`
 else
 LDFLAGS := $(BITS) -march=$(TARGET_ARCH) -lm -lGL `$(SDLCONFIG) --libs` -no-pie -lpthread
-endif
-endif
-
 endif #Added for OSX
 endif #Added for Pi
 
