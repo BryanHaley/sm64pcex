@@ -8,6 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __MINGW32__
+#define FOR_WINDOWS 1
+#else
+#define FOR_WINDOWS 0
+#endif
+
 struct PCCLIOptions gCLIOpts;
 
 static void print_help(void) {
@@ -29,8 +35,20 @@ void parse_cli_opts(int argc, char* argv[]) {
 
     char base_dir[sizeof(gCLIOpts.BaseDirectory)];
     memset(base_dir, 0, sizeof(base_dir));
+
+#if FOR_WINDOWS
     char *pch = strrchr(argv[0], '/');
-    int last_index = pch-argv[0]+1;
+#else
+    char *pch = strrchr(argv[0], '\\');
+#endif
+
+    size_t last_index = pch-argv[0]+1;
+
+    if (last_index < 1)
+    {
+        fprintf(stderr, "Could not parse directory name\n");
+    }
+
     memcpy(base_dir, argv[0], last_index);
     strncpy(gCLIOpts.BaseDirectory, base_dir, sizeof(gCLIOpts.BaseDirectory));
 
