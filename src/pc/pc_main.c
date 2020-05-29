@@ -23,6 +23,8 @@
 #include "configfile.h"
 #include "controller/controller_api.h"
 
+#include "load_assets.h"
+
 OSMesg D_80339BEC;
 OSMesgQueue gSIEventMesgQueue;
 
@@ -161,6 +163,8 @@ void main_func(void) {
     audio_init();
     sound_init();
 
+    load_all_assets();
+
     thread5_game_loop(NULL);
 
     inited = true;
@@ -171,6 +175,8 @@ void main_func(void) {
 #else
     wm_api->main_loop(produce_one_frame);
 #endif
+
+    free_all_assets();
 }
 
 int main(int argc, char *argv[]) {

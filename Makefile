@@ -35,6 +35,10 @@ NODRAWINGDISTANCE ?= 0
 TEXTURE_FIX ?= 0
 # Enable extended options menu by default
 EXT_OPTIONS_MENU ?= 1
+# Disable loading assets from external files by default
+LOAD_EXTERNAL_FILES ?= 0
+# Disable debug build by default
+DEBUG_BUILD ?= 0
 
 # Build for Emscripten/WebGL
 TARGET_WEB ?= 0
@@ -506,6 +510,18 @@ endif
 ifeq ($(EXT_OPTIONS_MENU),1)
   CC_CHECK += -DEXT_OPTIONS_MENU
   CFLAGS += -DEXT_OPTIONS_MENU
+endif
+
+# Check for load from external files option
+ifeq ($(LOAD_EXTERNAL_FILES),1)
+  CC_CHECK += -DLOAD_EXTERNAL_FILES
+  CFLAGS += -DLOAD_EXTERNAL_FILES
+endif
+
+# Check for debug build
+ifeq ($(DEBUG_BUILD),1)
+  CC_CHECK += -g
+  CFLAGS += -g
 endif
 
 ASFLAGS := -I include -I $(BUILD_DIR) $(VERSION_ASFLAGS)
