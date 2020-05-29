@@ -163,8 +163,6 @@ void main_func(void) {
     audio_init();
     sound_init();
 
-    load_all_assets();
-
     thread5_game_loop(NULL);
 
     inited = true;
@@ -175,8 +173,6 @@ void main_func(void) {
 #else
     wm_api->main_loop(produce_one_frame);
 #endif
-
-    free_all_assets();
 }
 
 int main(int argc, char *argv[]) {

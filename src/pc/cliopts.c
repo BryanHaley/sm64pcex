@@ -21,7 +21,28 @@ static void print_help(void) {
 void parse_cli_opts(int argc, char* argv[]) {
     // Initialize options with false values.
     memset(&gCLIOpts, 0, sizeof(gCLIOpts));
-    strncpy(gCLIOpts.ConfigFile, CONFIGFILE_DEFAULT, sizeof(gCLIOpts.ConfigFile));
+
+    if (strlen(argv[0]) > sizeof(gCLIOpts.BaseDirectory))
+    {
+        fprintf(stderr, "Directory name too long: %s\n", argv[0]);
+    }
+
+    char base_dir[sizeof(gCLIOpts.BaseDirectory)];
+    memset(base_dir, 0, sizeof(base_dir));
+    char *pch = strrchr(argv[0], '/');
+    int last_index = pch-argv[0]+1;
+    memcpy(base_dir, argv[0], last_index);
+    strncpy(gCLIOpts.BaseDirectory, base_dir, sizeof(gCLIOpts.BaseDirectory));
+
+    if (strlen(gCLIOpts.BaseDirectory)+strlen(CONFIGFILE_DEFAULT) > sizeof(gCLIOpts.ConfigFile))
+    {
+        fprintf(stderr, "Config file path too long: %s%s\n", gCLIOpts.BaseDirectory, CONFIGFILE_DEFAULT);
+    }
+
+    strncpy(gCLIOpts.ConfigFile, gCLIOpts.BaseDirectory, sizeof(gCLIOpts.ConfigFile));
+    strncpy(gCLIOpts.ConfigFile+strlen(gCLIOpts.ConfigFile), CONFIGFILE_DEFAULT, sizeof(gCLIOpts.ConfigFile));
+
+    //printf("%s\n", gCLIOpts.ConfigFile);
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--skip-intro") == 0) // Skip Peach Intro
