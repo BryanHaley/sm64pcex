@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #ifdef __MINGW32__
 #define FOR_WINDOWS 1
@@ -24,43 +25,43 @@ static void print_help(void) {
     printf("%-20s\tSaves the configuration file as CONFIGNAME.\n", "--configfile CONFIGNAME");
 }
 
-void parse_cli_opts(int argc, char* argv[]) {
+bool parse_cli_opts(int argc, char* argv[]) {
     // Initialize options with false values.
     memset(&gCLIOpts, 0, sizeof(gCLIOpts));
 
     if (strlen(argv[0]) > sizeof(gCLIOpts.BaseDirectory))
     {
         fprintf(stderr, "Directory name too long: %s\n", argv[0]);
+        return FALSE;
     }
 
-    char base_dir[sizeof(gCLIOpts.BaseDirectory)];
-    memset(base_dir, 0, sizeof(base_dir));
-
 #if FOR_WINDOWS
-    char *pch = strrchr(argv[0], '/');
-#else
     char *pch = strrchr(argv[0], '\\');
+#else
+    char *pch = strrchr(argv[0], '/');
 #endif
 
     size_t last_index = pch-argv[0]+1;
 
-    if (last_index < 1)
+    if (last_index < 1 || last_index > sizeof(gCLIOpts.BaseDirectory) || last_index > sizeof(gCLIOpts.ConfigFile))
     {
-        fprintf(stderr, "Could not parse directory name\n");
+        fprintf(stderr, "Could not parse directory name. Got index: %d\n", last_index);
+        return FALSE;
     }
 
-    memcpy(base_dir, argv[0], last_index);
-    strncpy(gCLIOpts.BaseDirectory, base_dir, sizeof(gCLIOpts.BaseDirectory));
+    strncpy(gCLIOpts.BaseDirectory, argv[0], last_index);
+    gCLIOpts.BaseDirectory[last_index] = '\0';
 
     if (strlen(gCLIOpts.BaseDirectory)+strlen(CONFIGFILE_DEFAULT) > sizeof(gCLIOpts.ConfigFile))
     {
         fprintf(stderr, "Config file path too long: %s%s\n", gCLIOpts.BaseDirectory, CONFIGFILE_DEFAULT);
+        return FALSE;
     }
 
     strncpy(gCLIOpts.ConfigFile, gCLIOpts.BaseDirectory, sizeof(gCLIOpts.ConfigFile));
     strncpy(gCLIOpts.ConfigFile+strlen(gCLIOpts.ConfigFile), CONFIGFILE_DEFAULT, sizeof(gCLIOpts.ConfigFile));
 
-    //printf("%s\n", gCLIOpts.ConfigFile);
+    //printf("Base directory: %s\n", gCLIOpts.BaseDirectory);
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--skip-intro") == 0) // Skip Peach Intro
@@ -86,6 +87,7 @@ void parse_cli_opts(int argc, char* argv[]) {
                 const unsigned int arglen = strlen(argv[i+1]);
                 if (arglen >= sizeof(gCLIOpts.ConfigFile)) {
                     fprintf(stderr, "Configuration file supplied has a name too long.\n");
+                    return FALSE;
                 } else {
                     strncpy(gCLIOpts.ConfigFile, argv[i+1], arglen);
                     gCLIOpts.ConfigFile[arglen] = '\0';

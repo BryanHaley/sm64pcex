@@ -4,8 +4,8 @@
 struct PCCLIOptions  {
     unsigned int SkipIntro;
     unsigned int FullScreen;
-    char ConfigFile[1024];
     char BaseDirectory[1024];
+    char ConfigFile[1024];
 };
 
 extern struct PCCLIOptions gCLIOpts;

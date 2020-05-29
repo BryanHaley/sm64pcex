@@ -176,7 +176,7 @@ void main_func(void) {
 }
 
 int main(int argc, char *argv[]) {
-    parse_cli_opts(argc, argv);
+    if (!parse_cli_opts(argc, argv)) return -1;
     main_func();
     return 0;
 }
